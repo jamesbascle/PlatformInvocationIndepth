@@ -1,0 +1,160 @@
+\chapter{Introduction to Pointer}
+\section{Overview on Pointer}
+If you already have sufficient understanding about Pointer in both C\# and C languages, you can skip this chapter. This chapter is for introducing beginners to the concept of pointer.
+
+A pointer is essentially an address to an area of memory. You can represent what that pointer is supposed to be such as a pointer of integer, struct, classes, function or even another pointer.
+To read and write memory that pointer is pointing to, you have to first dereference that pointer and you can do so by using asterisk in front of a pointer variable to dereference it, not to be confused with multiplication operator.
+
+\begin{lstlisting}{c}
+#include <stdlib.h>
+#include <stdint.h>
+
+int32_t* MyPointer = (int32_t*)malloc(sizeof(int32_t));
+
+// You can access pointer like an array
+MyPointer[0] = 12;
+
+// You can also dereference a pointer to read or write the data in memory directly.
+*MyPointer = 12;
+\end{lstlisting}
+
+The C snippet above first allocate with malloc function a new buffer of memory up to a size of int32\_t datatype and return a void* pointer which then get casted into int32\_t* pointer type. You can access the pointer in two ways, writing it similar fashion as you would when accessing an array and to use '*' operator to dereference the pointer to read and write the first datatype the pointer is currently pointing to.
+\newpage
+Let's get started by creating a new "ChapterThree" directory and create a new file, "ChapThree.c" and open with your favorite editor.
+
+We will need three headers to provide the functionalties and types we need for this chapter.
+
+\begin{lstlisting}{c}
+#include <stdlib.h> // For malloc function
+#include <stdio.h> // for printf function
+#include <stdint.h> // for int32_t type
+\end{lstlisting}
+
+Let's declare a main function that allocate a buffer of 20 integers and return a pointer address to that buffer and we'll treat it as an array of integer.
+
+\begin{lstlisting}
+int main()
+{
+	int32_t* buffer = (int32_t*)malloc(sizeof(int32_t)*20);
+	// Let's do some math on our buffer!
+	for (int32_t I = 0; I < 20; ++I)
+	{
+		buffer[I] = I * 2;
+	}
+	
+	// Now let's print what our buffer is going to look like:
+	for (int32_t I = 0; I < 20; ++I)
+	{
+		printf("Buffer[%i] = %i\n", I, buffer[I]);
+	}
+	
+	free(buffer);
+}
+\end{lstlisting}
+\newpage
+The output would be shown as this:
+
+\includegraphics[width=\textwidth]{ChapThreeConsole}
+
+There are few things that may be confusing in the snippet above and why it is an acceptable practice in C:
+
+\begin{enumerate}
+	\item When you use malloc to allocate buffer, malloc keeps a record of how big the block of memory is so that it can be freed in later time, however you cannot and should not access that size information within malloc, keeping track of buffer size is your responsibility.
+	
+	\item When using malloc, you allocate the amount of data you would need by using sizeof keyword to determine how many bytes capacity you need in a buffer to cover that information and you can multiply that element size by the number of elements you want allocated for your program. In the snippet above, size of int32\_t type would resolves to 4 and then multiplied by 20, so we would have a buffer that have the capacity to hold 20 int32\_t elements.
+\end{enumerate}
+
+Because of the fact behind malloc/free that LibC does store information about the pointer that is allocated with those functions, it discouraged to use different library or framework to free that memory, although most library and framework may likely use the same functions.
+\newpage
+\section{The Function Pointers}
+Function pointers are a bit of a tongue twister, because the way it is defined in C can be confusing.
+
+\begin{lstlisting}
+int32_t (*Add)(int32_t, int32_t);
+\end{lstlisting}
+
+The snippet above is a declaration of function pointer for a function that returns a int32\_t after accepting two int32\_t parameters. It currently pointing at nothing and would cause segmentation fault when you attempt to call it, so you have to assign a function for it to be used.
+
+One example of this use case is that we can dynamically modify the behavior of our program during runtime and essentially allow our program to switch logic at different points during program execution like so:
+\begin{lstlisting}
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdint.h>
+
+int32_t (*Add)(int32_t, int32_t);
+
+int32_t ActualAddingFunction(int32_t a, int32_t b)
+{
+	return a + b;
+}
+
+int32_t FalseAddingFunction(int32_t a, int32_t b)
+{
+	return a - b;
+}
+
+int main()
+{
+	int A = 1;
+	int B = 2;
+	
+	Add = ActualAddingFunction;
+	
+	printf("Let's try ActualAddingFunction: %i\n", Add(A, B));
+	
+	Add = FalseAddingFunction;
+	
+	printf("Let's try FalseAddingFunction: %i\n", Add(A, B));
+}
+\end{lstlisting}
+\newpage
+It would produce an output as followed:
+
+\includegraphics[width=\textwidth]{ChapThreeConsoleTwo}
+\newpage
+\section{C\# Counterpart}
+C\# does support pointer so long that the code blocks, methods, or types are defined with unsafe modifier. Those can be accomplished by using snippets below as a demonstration:
+\begin{lstlisting}{c}
+public unsafe void DoBufferAllocation()
+{
+	int* MyIntegerPointer = (int*)Marshal
+		.AllocHGlobal(Marshal.SizeOf<int>()).ToPointer();
+	
+	// You can use it in a similar fashion as you would in C.
+	*MyIntegerPointer = 123;
+}
+\end{lstlisting}
+
+\begin{lstlisting}{c}
+public unsafe class Demo {
+	public void DoBufferAllocation()
+	{
+		int* MyIntegerPointer = (int*)Marshal
+		.AllocHGlobal(Marshal.SizeOf<int>()).ToPointer();
+		
+		*MyIntegerPointer = 123;
+	}
+}
+\end{lstlisting}
+
+\begin{lstlisting}{c}
+public void DoBufferAllocation()
+{
+	unsafe {
+		int* MyIntegerPointer = (int*)Marshal
+		.AllocHGlobal(Marshal.SizeOf<int>()).ToPointer();
+		
+		*MyIntegerPointer = 123;
+	}
+}
+\end{lstlisting}
+
+However, compiler will throw an error unless you explicitly specify that you want to compile unsafe code. For CoreCLR, you can do so by adding the following into your csproj file inside the  <PropertyGroup> tags:
+
+\begin{lstlisting}{xml}
+<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+\end{lstlisting}
+\newpage
+Marshal static class from System.Runtime.InteropServices offer a variety of functions for marshaling pointers to usable data types and vice versa. You can also generate a function in runtime in CLR and pass it over to C program so that C program can use your newly created function during it's execution.
+
+\textbf{TODO}: Add project to demonstrate the above.
